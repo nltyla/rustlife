@@ -65,6 +65,12 @@ struct Generation {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() != 2 {
+        println!("Usage: {} filename", args[0]);
+        std::process::exit(-1);
+    }
+
     execute!(
         stdout(),
         EnterAlternateScreen,
@@ -73,7 +79,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     )?;
     enable_raw_mode()?;
 
-    let mut gen = init();
+    let mut gen = init(&args[1]);
 
     let mut show_histo_enabled = false;
     let mut auto_next = false;
@@ -96,7 +102,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             match crossterm::event::read().unwrap() {
                 Event::Key(key_event) => match key_event.code {
                     KeyCode::Char(c) => match c {
-                        's' => {
+                        'n' => {
                             next = true;
                         }
                         ' ' => {
@@ -108,6 +114,25 @@ fn main() -> Result<(), Box<dyn Error>> {
                         }
                         'q' => {
                             quit = true;
+                        }
+                        '?' => {
+                            execute!(
+                                stdout(),
+                                crossterm::terminal::Clear(ClearType::All),
+                                MoveTo(0, 0),
+                            )?;
+                            disable_raw_mode()?;
+                            println!("Help for Conway's Game of Life");
+                            println!("------------------------------");
+                            println!("mouse-drag to move view");
+                            println!("space: toggle pause");
+                            println!("n: next generation, if paused");
+                            println!("h: toggle histogram");
+                            println!("q: quit");
+                            println!();
+                            println!("any key to continue");
+                            enable_raw_mode()?;
+                            crossterm::event::read()?;
                         }
                         _ => {}
                     },
@@ -148,9 +173,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     )?)
 }
 
-fn init() -> Generation {
+fn init(filename: &str) -> Generation {
     let mut cells = HashSet::new();
-    if let Ok(lines) = read_lines("./gen0.txt") {
+    if let Ok(lines) = read_lines(filename) {
         for (y, line) in lines.enumerate() {
             if let Ok(ip) = line {
                 for (x, item) in ip.chars().enumerate() {
@@ -217,7 +242,7 @@ fn histo(gen: &Generation, max_age: u64) -> HashMap<u64, u64> {
 fn show_histo(histo: &HashMap<u64, u64>) -> Result<(), Box<dyn Error>> {
     const WIDTH: f64 = 25.0;
 
-    let (xs, ys) = terminal::size().unwrap();
+    let (_, ys) = terminal::size().unwrap();
 
     let max_count = *histo.values().max().unwrap_or(&1);
 
@@ -265,7 +290,7 @@ fn show(gen: &Generation, offset: Point) -> Result<(), Box<dyn Error>> {
         stdout(),
         MoveTo(0, 0),
         Print(format!(
-            "gen:{} cells:{} births:{} deaths:{} space:freeze s:step h:histo q:quit",
+            "Press '?' for help. Gen:{} Cells:{} Births:{} Deaths:{}",
             gen.age,
             gen.cells.len(),
             gen.births,
