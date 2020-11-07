@@ -211,7 +211,7 @@ fn life(gen: &Generation) -> Generation {
     let mut births = gen.births;
     for cell in empty_neighbors.iter() {
         if count_neighbors(*cell, &gen.cells, &mut None) == 3 {
-            next_cells.insert(Cell::new(cell.point, 0));
+            next_cells.insert(*cell);
             births += 1;
         }
     }
