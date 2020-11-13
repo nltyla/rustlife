@@ -358,3 +358,41 @@ where
     let file = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn no_change() {
+        let cell = Cell::new(Point::new(0, 0), 0);
+
+        let count = check_neighbor(cell, &HashSet::new(), &mut None, 1);
+
+        assert_eq!(1, count);
+    }
+
+    #[test]
+    fn count_as_neighbor() {
+        let cell = Cell::new(Point::new(0, 0), 0);
+
+        let mut gen = HashSet::new();
+        gen.insert(Cell::new(Point::new(0, 0), 0));
+        let mut empty_neighbors = HashSet::new();
+        let count = check_neighbor(cell, &gen, &mut Some(&mut empty_neighbors), 0);
+
+        assert_eq!(1, count);
+        assert_eq!(0, empty_neighbors.len());
+    }
+
+    #[test]
+    fn count_as_empty_neighbor() {
+        let cell = Cell::new(Point::new(0, 0), 0);
+
+        let mut empty_neighbors = HashSet::new();
+        let count = check_neighbor(cell, &HashSet::new(), &mut Some(&mut empty_neighbors), 0);
+
+        assert_eq!(0, count);
+        assert!(empty_neighbors.contains(&cell));
+    }
+}
